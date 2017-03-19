@@ -18,7 +18,7 @@ class Classifier:
         positive = testing * data * a  + b * spam
         problem = Problem(Maximize(positive - logLogistic))
 
-        result = problem.solve()
+        result = problem.solve(solver=SCS)
         return a.value, b.value
 
     #Classify sample
