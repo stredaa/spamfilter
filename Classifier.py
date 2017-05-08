@@ -2,7 +2,16 @@ import numpy
 import math
 from cvxpy import *
 
-class Classifier:
+class Classifier(object):
+    #Classify sample
+    def evaluate(self, sample):
+        None
+
+    #Initialize inner parameters
+    def __init__(self, data, labels):
+        None
+
+class LogisticClassifier(Classifier):
     a = None
     b = None
 

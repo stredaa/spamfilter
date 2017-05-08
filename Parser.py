@@ -1,9 +1,7 @@
 import email
 import re
 
-class Parser:
-    dictionary = None
-
+class Parser(object):
     #stripHeaders helper conjoining multiple substitutions into one regex
     @staticmethod
     def multiRegexSubstitute(regexArray, text, substitute = ""):
@@ -32,8 +30,12 @@ class Parser:
 
         return text
 
-    def __init__(self, dictionary):
-        self.dictionary = dictionary
+    #Return an array of integer from a given email.
+    def parseEmail(self, email):
+        return None
+
+class ParserDictionary(Parser):
+    dictionary = None
 
     #Translate a given email according into a word vector according to the preset dictionary
     def parseEmail(self, mail):
