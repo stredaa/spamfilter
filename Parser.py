@@ -4,6 +4,7 @@ import email
 import re
 import numpy
 
+
 class Parser(object):
     __metaclass__ = ABCMeta
 
@@ -26,14 +27,16 @@ class Parser(object):
             except:
                 text += mail
         if "delivered-to" in text:
-            text = text[re.search("\n\n", text).start()+1:]
+            text = text[re.search("\n\n", text).start() + 1:]
 
-        #REGEX punctuation mark removal
-        text = Parser.multiRegexSubstitute(["\.", "\?", ";", ",", "\"", "'", "=", "#", "[0-9]", "\*", "!", "%"], text) # non-expanding substitutions
-        text = Parser.multiRegexSubstitute(["-", "\(", "\)", "\n", "\t", "&nbsp", "_", "&", "$", "@", ":", "\[", "\]"], text, " ") # expanding substitutions
+        # REGEX punctuation mark removal
+        text = Parser.multiRegexSubstitute(
+            ["\.", "\?", ";", ",", "\"", "'", "=", "#", "[0-9]", "\*", "!", "%"], text)  # non-expanding substitutions
+        text = Parser.multiRegexSubstitute(
+            ["-", "\(", "\)", "\n", "\t", "&nbsp", "_", "&", "$", "@", ":", "\[", "\]"], text, " ")  # expanding substitutions
 
-        text = re.sub("<[^<>]*>", " ", text) #remove HTML/XML tags
-        text = re.sub(" +"," ", text) #finisher whitespace removal
+        text = re.sub("<[^<>]*>", " ", text)  # remove HTML/XML tags
+        text = re.sub(" +", " ", text)  # finisher whitespace removal
 
         return text
 
@@ -48,8 +51,8 @@ class Parser(object):
 
 class ParserDictionary(Parser):
     def parseEmail(self, mail):
-        """Translate a given email according into a word vector
-        according to the preset dictionary"""
+        """Translate a given email into a word vector according
+        to the preset dictionary"""
         parsedData = [0] * len(self.dictionary)
         plaintext = Parser.stripHeaders(mail).split(" ")
         for x in plaintext:
@@ -62,11 +65,11 @@ class PCAParser(Parser):
     def __init__(self, dictionary, data, dims):
         self.dictionary = dictionary
         data = numpy.matrix(data, dtype='double')
-        u,s,v = numpy.linalg.svd(data)
+        u, s, v = numpy.linalg.svd(data)
         self.p = v[:dims]
 
     def returnNewData(self, data):
-        return data*self.p.T
+        return data * self.p.T
 
     def parseEmail(self, mail):
         parsedData = [0] * len(self.dictionary)

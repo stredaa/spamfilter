@@ -28,7 +28,8 @@ class LogisticClassifier(Classifier):
         spam = sum(labels)
         testing = numpy.matrix(labels)
 
-        logLogistic = sum([logistic(data[i] * a + b) for i in xrange(len(data))])
+        logLogistic = sum([logistic(data[i] * a + b)
+                           for i in xrange(len(data))])
         positive = testing * data * a + b * spam
         problem = Problem(Maximize(positive - logLogistic))
 
@@ -41,7 +42,8 @@ class LogisticClassifier(Classifier):
         return math.e**(sample * self.a + self.b)[0, 0] / (1 + math.e**(sample * self.a + self.b)[0, 0]) - 1.0 / 2
 
     def __init__(self, data, labels):
-        self.a, self.b = LogisticClassifier.getModelParams(numpy.matrix(data), labels, len(data[0]))
+        self.a, self.b = LogisticClassifier.getModelParams(
+            numpy.matrix(data), labels, len(data[0]))
 
 
 class SVMClassifier(Classifier):
@@ -54,7 +56,8 @@ class SVMClassifier(Classifier):
         Ker = numpy.zeros((len(a), len(b)))
         for i in range(len(a)):
             for j in range(len(b)):
-                Ker[i, j] = numpy.exp(-(numpy.linalg.norm(a[i]-b[j], 2))**2/(2 * tau * tau))
+                Ker[i, j] = numpy.exp(-(numpy.linalg.norm(a[i] -
+                                                          b[j], 2))**2 / (2 * tau * tau))
         return Ker
 
     @staticmethod
@@ -64,7 +67,8 @@ class SVMClassifier(Classifier):
         y = 2 * y - 1
         Ker = SVMClassifier.gaussKernel(x, x, tau)
         alpha = Variable(m)
-        loss = sum_entries(pos(1 - mul_elemwise(y,  Ker*alpha))) + quad_form(alpha, Ker)/(2*C)
+        loss = sum_entries(pos(1 - mul_elemwise(y,  Ker * alpha))
+                           ) + quad_form(alpha, Ker) / (2 * C)
         problem = Problem(Minimize(loss))
         problem.solve()
         return alpha.value, x
@@ -76,9 +80,11 @@ class SVMClassifier(Classifier):
         sample = 1 * (sample > 0)
         res = 0
         for i in xrange(len(self.alpha)):
-            res = res + self.alpha[i] * numpy.exp(-(numpy.linalg.norm(self.x[i] - sample, 2))**2/(2 * self.tau * self.tau))
+            res = res + self.alpha[i] * numpy.exp(-(numpy.linalg.norm(
+                self.x[i] - sample, 2))**2 / (2 * self.tau * self.tau))
         return res
 
     def __init__(self, data, labels, tau=8, C=3):
         self.tau = tau
-        self.alpha, self.x = SVMClassifier.getModelParams(numpy.array(data), numpy.array(labels), tau, C)
+        self.alpha, self.x = SVMClassifier.getModelParams(
+            numpy.array(data), numpy.array(labels), tau, C)
