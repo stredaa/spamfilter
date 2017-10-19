@@ -22,7 +22,7 @@ class Dictionary(object):
 
 #        Create small dict
         for file in files:
-            for word in file.split(" "):
+            for word in filter(lambda x: len(x) < 50, file.split(" ")):
                 if word in tmpDict:
                     tmpFreq[tmpDict.index(word)] += 1
                 else:
