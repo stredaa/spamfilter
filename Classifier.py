@@ -20,7 +20,6 @@ class LogisticClassifier(Classifier):
     a = None
     b = None
 
-#   CVXPY convex optimization solver, given vectorized emailes it tries to find optimal parameter values for logistic regression curve.
     @staticmethod
     def getModelParams(data, labels, size):
         a = Variable(size, 1)
@@ -39,7 +38,8 @@ class LogisticClassifier(Classifier):
     def evaluate(self, sample):
         if self.a is None or self.b is None:
             raise ValueError("Model parameters not set!")
-        return math.e**(sample * self.a + self.b)[0, 0] / (1 + math.e**(sample * self.a + self.b)[0, 0]) - 1.0 / 2
+        return (math.e**(sample * self.a + self.b)[0, 0] /
+                (1 + math.e**(sample * self.a + self.b)[0, 0]) - 1.0 / 2)
 
     def __init__(self, data, labels):
         self.a, self.b = LogisticClassifier.getModelParams(
@@ -56,8 +56,9 @@ class SVMClassifier(Classifier):
         Ker = numpy.zeros((len(a), len(b)))
         for i in range(len(a)):
             for j in range(len(b)):
-                Ker[i, j] = numpy.exp(-(numpy.linalg.norm(a[i] -
-                                                          b[j], 2))**2 / (2 * tau * tau))
+                Ker[i, j] = numpy.exp(
+                    -(numpy.linalg.norm(a[i] -
+                                        b[j], 2))**2 / (2 * tau * tau))
         return Ker
 
     @staticmethod

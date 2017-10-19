@@ -106,17 +106,17 @@ def buildModel(ham, spam, dictLimit):
 
 def runTests(emails, classifier, parser):
     def makeStatistics(data):
-        results = data.values()
+        results = map(lambda x: int(x > 0), data.values())
         print "[stat]\tTotal items: " + str(len(results))
         print "[stat]\tTotal items classified as spam: " + str(sum(results))
         print ("[stat]\t" + "Percentage of items classified as spam: "
-               '{0:.2f}'.format(1.0 * sum(results) / len(results)) + "%")
+               '{0:.2f}'.format(100.0 * sum(results) / len(results)) + "%")
 
     def evalMsg(result, msg, classifier, parser):
         sha256 = hashlib.sha256()
         sha256.update(msg)
         result[sha256.hexdigest()] = \
-            int(classifier.evaluate(parser.parseEmail(msg)))
+                classifier.evaluate(parser.parseEmail(msg))
 
     result = {}
     map(lambda x: evalMsg(result, x, classifier, parser), emails)
@@ -171,7 +171,7 @@ elif args.mode == "test":
 
     if not args.mail:
         print "--mail parameter is required"
-    print results
+#    print results
 
 else:
     raise Exception("You have to set a valid model.")
