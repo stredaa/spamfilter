@@ -50,11 +50,12 @@ class Parser(object):
 
 
 class ParserDictionary(Parser):
+
     def parseEmail(self, mail):
         """Translate a given email into a word vector according
         to the preset dictionary"""
         parsedData = [0] * len(self.dictionary)
-        plaintext = Parser.stripHeaders(mail).split(" ")
+        plaintext = Parser.stripHeaders(mail.lower()).split(" ")
         for x in plaintext:
             if x in self.dictionary:
                 parsedData[self.dictionary.index(x)] += 1
@@ -62,6 +63,7 @@ class ParserDictionary(Parser):
 
 
 class PCAParser(Parser):
+
     def __init__(self, dictionary, data, dims):
         self.dictionary = dictionary
         data = numpy.matrix(data, dtype='double')
@@ -73,7 +75,7 @@ class PCAParser(Parser):
 
     def parseEmail(self, mail):
         parsedData = [0] * len(self.dictionary)
-        plaintext = Parser.stripHeaders(mail).split(" ")
+        plaintext = Parser.stripHeaders(mail.lower()).split(" ")
         for x in plaintext:
             if x in self.dictionary:
                 parsedData[self.dictionary.index(x)] += 1
