@@ -52,14 +52,14 @@ class SVMClassifier(Classifier):
     x = None
 
     @staticmethod
-    def gaussKernel(a,tau):
+    def gaussKernel(a, tau):
         dim = len(a)
-        Ker=numpy.zeros((dim,dim))
+        Ker = numpy.zeros((dim, dim))
         for i in range(dim):
-            for j in range(i,dim): 
-                Ker[i,j]=-(numpy.linalg.norm(a[i]-a[j],2))**2
-                Ker[j,i]=Ker[i,j]
-        Ker = numpy.exp(Ker/(2*tau**2))
+            for j in range(i, dim):
+                Ker[i, j] = -(numpy.linalg.norm(a[i] - a[j], 2))**2
+                Ker[j, i] = Ker[i, j]
+        Ker = numpy.exp(Ker / (2 * tau**2))
         return Ker
 
     @staticmethod
@@ -69,7 +69,8 @@ class SVMClassifier(Classifier):
         y = 2 * y - 1
         Ker = SVMClassifier.gaussKernel(x, tau)
         alpha = Variable(m)
-        loss = sum_entries(pos(1 - mul_elemwise(y,  Ker * alpha))) + quad_form(alpha, Ker) / (2 * C)  
+        loss = sum_entries(pos(1 - mul_elemwise(y,  Ker * alpha))
+                           ) + quad_form(alpha, Ker) / (2 * C)
         problem = Problem(Minimize(loss))
         problem.solve()
         a = numpy.array(alpha.value.T)[0]
@@ -78,9 +79,9 @@ class SVMClassifier(Classifier):
     def evaluate(self, sample):
         if self.alpha is None or self.x is None or self.tau is None:
             raise ValueError("Model parameters not set!")
-        sample = 1 * (numpy.array(sample)>0)
-        tmp = self.x-sample
-        return numpy.sum(numpy.multiply(numpy.exp(-numpy.linalg.norm(tmp,axis=1)**2/(2*self.tau**2)), self.alpha))
+        sample = 1 * (numpy.array(sample) > 0)
+        tmp = self.x - sample
+        return numpy.sum(numpy.multiply(numpy.exp(-numpy.linalg.norm(tmp, axis=1)**2 / (2 * self.tau**2)), self.alpha))
 
     def __init__(self, data, labels, tau=8, C=3):
         self.tau = tau
