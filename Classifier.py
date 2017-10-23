@@ -63,7 +63,7 @@ class SVMClassifier(Classifier):
         return Ker
 
     @staticmethod
-    def getModelParams(x, y, tau, C):
+    def getModelParams(x, y, tau, C, limit):
         m = len(y)
         x = 1 * (x > 0)
         y = 2 * y - 1
@@ -72,9 +72,17 @@ class SVMClassifier(Classifier):
         loss = sum_entries(pos(1 - mul_elemwise(y,  Ker * alpha))
                            ) + quad_form(alpha, Ker) / (2 * C)
         problem = Problem(Minimize(loss))
-        problem.solve()
+        problem.solve(solver=ECOS, verbose=False, max_iters=15)
+        # Only alphas with absolute value > limit are relevant
         a = numpy.array(alpha.value.T)[0]
-        return a, x
+        newX = []
+        newA = []
+        for i in xrange(len(a)):
+            if numpy.abs(a[i]) > limit:
+                newA.append(a[i])
+                newX.append(x[i])
+
+        return numpy.array(newA), numpy.array(newX)
 
     def evaluate(self, sample):
         if self.alpha is None or self.x is None or self.tau is None:
@@ -83,7 +91,7 @@ class SVMClassifier(Classifier):
         tmp = self.x - sample
         return numpy.sum(numpy.multiply(numpy.exp(-numpy.linalg.norm(tmp, axis=1)**2 / (2 * self.tau**2)), self.alpha))
 
-    def __init__(self, data, labels, tau=8, C=3):
+    def __init__(self, data, labels, tau=8, C=3, limit=1e-3):
         self.tau = tau
         self.alpha, self.x = SVMClassifier.getModelParams(
-            numpy.array(data), numpy.array(labels), tau, C)
+            numpy.array(data), numpy.array(labels), tau, C, limit)
