@@ -16,38 +16,38 @@ class Dictionary(object):
         :param frequency: list of integers (frequencies) to be extended
         """
 
-        tmpDict = []
-        tmpFreq = []
-        tmpAppends = []
+        tmp_dict = []
+        tmp_freq = []
+        tmp_appends = []
 
 #        Create small dict
         for file in files:
             for word in filter(lambda x: 0 < len(x) < 50, file.split(" ")):
-                if word in tmpDict:
-                    tmpFreq[tmpDict.index(word)] += 1
+                if word in tmp_dict:
+                    tmp_freq[tmp_dict.index(word)] += 1
                 else:
-                    tmpDict.append(word)
-                    tmpFreq.append(1)
+                    tmp_dict.append(word)
+                    tmp_freq.append(1)
 
 #       Merge old and new dict
-        for i in xrange(len(tmpDict)):
-            if tmpDict[i] in dictionary:
-                frequency[dictionary.index(tmpDict[i])] += tmpFreq[i]
+        for i in xrange(len(tmp_dict)):
+            if tmp_dict[i] in dictionary:
+                frequency[dictionary.index(tmp_dict[i])] += tmp_freq[i]
             else:
-                tmpAppends.append(tmpDict[i])
-                frequency.append(tmpFreq[i])
+                tmp_appends.append(tmp_dict[i])
+                frequency.append(tmp_freq[i])
 
-        return dictionary + tmpAppends, frequency
+        return dictionary + tmp_appends, frequency
 
     @staticmethod
     @abstractmethod
-    def filterDictionary(dSpam, fSpam, dHam, fHam):
+    def filterDictionary(spam_d, spam_f, ham_d, ham_f):
         """Abstract method intended for dictionary filtering.
 
-        :param dSpam: list of strings (words) - dictionary of SPAM dataset
-        :param fSpam: list of integers - associated HAM frequencies
-        :param dHam: list of strings (words) - dictionary of HAM dataset
-        :param fHam: list of integers - associated HAM frequencies
+        :param spam_d: list of strings (words) - dictionary of SPAM dataset
+        :param spam_f: list of integers - associated HAM frequencies
+        :param ham_d: list of strings (words) - dictionary of HAM dataset
+        :param ham_f: list of integers - associated HAM frequencies
        """
         pass
 
@@ -56,52 +56,52 @@ class DictionaryMI(Dictionary):
     """Dictionary extraction class with filtering based on a
     mutual information."""
     @staticmethod
-    def mutualInformation(dSpam, fSpam, dHam, fHam):
+    def mutualInformation(spam_d, spam_f, ham_d, ham_f):
         """Generate a dictionary keyed by strings (words) with a corresponding
         I_mutual as a value.
 
-        :param dSpam: list of strings (words) - dictionary of SPAM dataset
-        :param fSpam: list of integers - associated HAM frequencies
-        :param dHam: list of strings (words) - dictionary of HAM dataset
-        :param fHam: list of integers - associated HAM frequencies
+        :param spam_d: list of strings (words) - dictionary of SPAM dataset
+        :param spam_f: list of integers - associated HAM frequencies
+        :param ham_d: list of strings (words) - dictionary of HAM dataset
+        :param ham_f: list of integers - associated HAM frequencies
         """
-        def mutualInformationSummand(fSel, fOpp, tSel, tOpp):
-            p_xy = 1.0 * fSel / (tSel + tOpp)
-            p_x = (fSel + fOpp) * 1.0 / (tSel + tOpp)
-            p_y = tSel * 1.0 / (tSel + tOpp)
+        def mutualInformationSummand(sel_freq, opp_freq, sel_total, opp_total):
+            p_xy = 1.0 * sel_freq / (sel_total + opp_total)
+            p_x = (sel_freq + opp_freq) * 1.0 / (sel_total + opp_total)
+            p_y = sel_total * 1.0 / (sel_total + opp_total)
             if p_xy / (p_x * p_y) > 0:
                 return p_xy * math.log(p_xy / (p_x * p_y))
             else:
                 return 0
 
-        mSpam = []
-        for i in xrange(len(dSpam)):
-            if dSpam[i] in dHam:
-                fOpp = fHam[dHam.index(dSpam[i])]
+        spam_m = []
+        for i in xrange(len(spam_d)):
+            if spam_d[i] in ham_d:
+                opp_freq = ham_f[ham_d.index(spam_d[i])]
             else:
-                fOpp = 0
+                opp_freq = 0
             MI = mutualInformationSummand(
-                fSpam[i], fOpp, len(dSpam), len(dHam))
+                spam_f[i], opp_freq, len(spam_d), len(ham_d))
             MI += mutualInformationSummand(
-                fOpp, fSpam[i], len(dHam), len(dSpam))
-            mSpam += [{"word": dSpam[i], "MI": MI}]
-        for i in xrange(len(dHam)):
-            if dHam[i] not in dSpam:
+                opp_freq, spam_f[i], len(ham_d), len(spam_d))
+            spam_m += [{"word": spam_d[i], "MI": MI}]
+        for i in xrange(len(ham_d)):
+            if ham_d[i] not in spam_d:
                 MI = mutualInformationSummand(
-                    fHam[i], 0, len(dHam), len(dSpam))
-                mSpam += [{"word": dHam[i], "MI": MI}]
-        return mSpam
+                    ham_f[i], 0, len(ham_d), len(spam_d))
+                spam_m += [{"word": ham_d[i], "MI": MI}]
+        return spam_m
 
     @staticmethod
-    def filterDictionary(dSpam, fSpam, dHam, fHam):
+    def filterDictionary(spam_d, spam_f, ham_d, ham_f):
         """Create a dictionary keyed by strings (words) with a corresponding
         mutual information value. Use these values to sort the keys.
 
-        :param dSpam: list of strings (words) - dictionary of SPAM dataset
-        :param fSpam: list of integers - associated HAM frequencies
-        :param dHam: list of strings (words) - dictionary of HAM dataset
-        :param fHam: list of integers - associated HAM frequencies
+        :param spam_d: list of strings (words) - dictionary of SPAM dataset
+        :param spam_f: list of integers - associated HAM frequencies
+        :param ham_d: list of strings (words) - dictionary of HAM dataset
+        :param ham_f: list of integers - associated HAM frequencies
         """
-        MI = DictionaryMI.mutualInformation(dSpam, fSpam, dHam, fHam)
+        MI = DictionaryMI.mutualInformation(spam_d, spam_f, ham_d, ham_f)
         sMI = sorted(MI, key=lambda k: -k['MI'])
         return [i['word'] for i in sMI]

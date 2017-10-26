@@ -5,23 +5,45 @@ from cvxpy import *
 
 
 class Classifier(object):
+    """Abstract class from which all classifiers should be derived.
+    Provides basic interfacing in order to train/evaluate."""
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def evaluate(self, sample):
-        None
+        """Evaluate given sample according to the trained constants.
+        Sign of returned value corresponds to the result.
+
+        :param sample: A vectorized sample (list).
+        """
+        pass
 
     @abstractmethod
     def __init__(self, data, labels):
-        None
+        """Initialize model - derive model parameters from given
+        data and its labels.
+
+        :param data: A list of vectorized samples.
+        :param labels: A 1/0 vector symbolizing positive/negative
+        detection.
+        """
+        pass
 
 
 class LogisticClassifier(Classifier):
-    a = None
-    b = None
+    """A classifier based on a logistic curve."""
+    __a = None
+    __b = None
 
     @staticmethod
     def getModelParams(data, labels, size):
+        """Calculate logistic-regression classifier parameters.s
+
+        :param data: A list of vectorized samples.
+        :param labels: A 1/0 vector symbolizing positive/negative
+        detection.
+        :param size: The length of given dataset.
+        """
         a = Variable(size, 1)
         b = Variable()
         spam = sum(labels)
@@ -36,13 +58,26 @@ class LogisticClassifier(Classifier):
         return a.value, b.value
 
     def evaluate(self, sample):
-        if self.a is None or self.b is None:
+        """Evaluate given sample according to calculated model.
+        Return a value in (-1/2, 1/2) with sign corresponding
+        to positive/negative detection.
+
+        :param sample: A vectorized sample.
+        """
+        if self.__a is None or self.__b is None:
             raise ValueError("Model parameters not set!")
-        return (math.e**(sample * self.a + self.b)[0, 0] /
-                (1 + math.e**(sample * self.a + self.b)[0, 0]) - 1.0 / 2)
+        return (math.e**(sample * self.__a + self.__b)[0, 0] /
+                (1 + math.e**(sample * self.__a + self.__b)[0, 0]) - 1.0 / 2)
 
     def __init__(self, data, labels):
-        self.a, self.b = LogisticClassifier.getModelParams(
+        """Initialize logistic curve parameters from a given labeled
+        dataset._
+
+        :param data: A list of vectorized samples.
+        :param labels: A 1/0 vector symbolizing pozitive/negative
+        detection.
+        """
+        self.__a, self.__b = LogisticClassifier.getModelParams(
             numpy.matrix(data), labels, len(data[0]))
 
 
@@ -53,6 +88,11 @@ class SVMClassifier(Classifier):
 
     @staticmethod
     def gaussKernel(a, tau):
+        """gaussKernel
+
+        :param a:
+        :param tau:
+        """
         dim = len(a)
         Ker = numpy.zeros((dim, dim))
         for i in range(dim):
@@ -64,6 +104,15 @@ class SVMClassifier(Classifier):
 
     @staticmethod
     def getModelParams(x, y, tau, C, limit):
+        """Calculate SVM model parameters.
+
+        :param x: A list of vectorized samples.
+        :param y: A 1/0 vector symbolizing positive/negative
+        detection
+        :param tau:
+        :param C:
+        :param limit: Values of alpha[i] below limit are ignored.
+        """
         m = len(y)
         x = 1 * (x > 0)
         y = 2 * y - 1
@@ -85,13 +134,28 @@ class SVMClassifier(Classifier):
         return numpy.array(newA), numpy.array(newX)
 
     def evaluate(self, sample):
+        """Evaluate a given sample according to given mode. A sign
+        of returned value corresponds to positive/negative detection.
+
+        :param sample: A vectorized sample.
+        """
         if self.alpha is None or self.x is None or self.tau is None:
             raise ValueError("Model parameters not set!")
         sample = 1 * (numpy.array(sample) > 0)
         tmp = self.x - sample
-        return numpy.sum(numpy.multiply(numpy.exp(-numpy.linalg.norm(tmp, axis=1)**2 / (2 * self.tau**2)), self.alpha))
+        return numpy.sum(numpy.multiply(numpy.exp(
+            - numpy.linalg.norm(tmp, axis=1)**2 / (2 * self.tau**2)),
+            self.alpha))
 
     def __init__(self, data, labels, tau=8, C=3, limit=1e-3):
+        """Initialize logistic curve parameters from a given labeled
+        dataset._
+
+        :param data: A list of vectorized samples.
+        :param labels: A 1/0 vector symbolizing pozitive/negative
+        detection.
+        """
+
         self.tau = tau
         self.alpha, self.x = SVMClassifier.getModelParams(
             numpy.array(data), numpy.array(labels), tau, C, limit)
