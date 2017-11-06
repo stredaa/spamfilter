@@ -4,18 +4,17 @@ import resource
 import argparse
 import mailbox
 import time
-import hashlib
 
-from Parser import *
-from Classifier import *
-from DictionaryUtils import *
+from Parser import ParserDictionary
+from Classifier import LogisticClassifier, SVMClassifier
+from DictionaryUtils import DictionaryMI, Dictionary
 
 
 def setRamLimit(limit):
     resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
 
 
-def extractMBOX(filename):
+def mbox_extract(filename):
     def getBody(msg):
         body = ""
         if msg.is_multipart():
@@ -52,7 +51,43 @@ def extractMBOX(filename):
     return list(map(getBody, mbox))
 
 
-def retrieveFile(filename, limit):
+def mbox_split(filename, detections, header_name):
+    mbox = mailbox.mbox(filename)
+    mails = [i for i in mbox]
+    mbox.close()
+
+    spam = mailbox.mbox("spam.mbox")
+    ham = mailbox.mbox("ham.mbox")
+
+    for i in range(min(len(mails), len(detections))):
+        if detections[i] >= 0:
+            spam.add(mails[i])
+        else:
+            ham.add(mails[i])
+    spam.flush()
+    ham.flush()
+    spam.close()
+    ham.close()
+
+
+def mbox_tag(filename, detections, header_name, outmbox):
+    mbox = mailbox.mbox(filename)
+    mails = [i for i in mbox]
+    mbox.close()
+
+    mbox = mailbox.mbox(outmbox)
+
+    for i in range(min(len(mails), len(detections))):
+        mails[i].add_header("X-" + header_name, "score %.2f" % (detections[i]))
+        if detections[i] >= 0:
+            mails[i].replace_header("Subject", "[SPAM]\t" +
+                                    mails[i].get("Subject"))
+        mbox.add(mails[i])
+    mbox.flush()
+    mbox.close()
+
+
+def retrieve_file(filename, limit):
     if not os.path.exists(filename):
         print "[error]\tFile " + filename + " does not exist."
         raise Exception("File " + filename + " not existing.")
@@ -61,14 +96,14 @@ def retrieveFile(filename, limit):
         return pickle.load(open(filename, "rb"))[:limit]
     elif filename[-5:] == ".mbox":
         print "[info]\tFile " + filename + " opened as mbox."
-        return extractMBOX(filename)[:limit]
+        return mbox_extract(filename)[:limit]
     else:
         print "[info]\tFile " + filename + " as a raw text file."
         with open(filename, "rb") as f:
             return [f.read()]
 
 
-def buildModel(ham, spam, dictLimit):
+def build_model(ham, spam, dictLimit):
     def buildBaseDict(mail, dictionary, frequency):
         raw = ParserDictionary.stripHeaders(mail).lower()
         return Dictionary.createDictionary([raw], dictionary, frequency)
@@ -100,28 +135,23 @@ def buildModel(ham, spam, dictLimit):
             [1] * len(spam) + [0] * len(ham)
         )
         print "[info]\tCreated Logistic-regression classifier"
-    print "[stat]\tTime taken: " + str(int(time.time())-start)
+    print "[stat]\tTime taken: " + str(int(time.time()) - start)
     return classifier, parser
 
 
-def runTests(emails, classifier, parser):
-    def makeStatistics(data):
-        results = map(lambda x: int(x > 0), data.values())
+def run_tests(emails, classifier, parser):
+    def gen_statistics(data):
+        results = map(lambda x: int(x > 0), data)
         print "[stat]\tTotal items: " + str(len(results))
         print "[stat]\tTotal items classified as spam: " + str(sum(results))
         print ("[stat]\t" + "Percentage of items classified as spam: "
                '{0:.2f}'.format(100.0 * sum(results) / len(results)) + "%")
 
-    def evalMsg(result, msg, classifier, parser):
-        sha256 = hashlib.sha256()
-        sha256.update(msg)
-        result[sha256.hexdigest()] = \
-                classifier.evaluate(parser.parseEmail(msg))
-
     result = {}
-    map(lambda x: evalMsg(result, x, classifier, parser), emails)
-    makeStatistics(result)
+    map(lambda x: classifier.evaluate(parser.parseEmail(x)), emails)
+    gen_statistics(result)
     return result
+
 
 parser = argparse.ArgumentParser(
     description='Create a spamfilter model or apply a created filter.')
@@ -153,10 +183,10 @@ if args.ramLimit:
 if args.mode == "model":
     if not args.ham or not args.spam:
         print "--ham and --spam parameters are required"
-    ham = retrieveFile(args.ham, args.limit)
-    spam = retrieveFile(args.spam, args.limit)
+    ham = retrieve_file(args.ham, args.limit)
+    spam = retrieve_file(args.spam, args.limit)
 
-    classifier, parser = buildModel(ham, spam, args.dictLimit)
+    classifier, parser = build_model(ham, spam, args.dictLimit)
     pickle.dump({"classifier": classifier, "parser": parser},
                 open(args.output, "wb"))
 
@@ -165,13 +195,25 @@ elif args.mode == "test":
         data = pickle.load(open(filename, "rb"))
         return data["classifier"], data["parser"]
 
-    emails = retrieveFile(args.mail, args.limit)
-    classifier, parser = unpickleModel(args.model)
-    results = runTests(emails, classifier, parser)
-
     if not args.mail:
         print "--mail parameter is required"
-#    print results
+#
+    emails = retrieve_file(args.mail, args.limit)
+    classifier, parser = unpickleModel(args.model)
+
+    if ".mbox" in args.mail:
+        results = map(lambda x: classifier.evaluate(parser.parseEmail(x)),
+                      emails)
+        if not args.output == "model.p":
+            mbox_tag(args.mail, results, args.algo, args.output)
+            print "[info]\tTagged MBOX created"
+        else:
+            mbox_split(args.mail, results, args.algo)
+            print "[info]\tSplit MBOXs created"
+    else:
+        results = run_tests(emails, classifier, parser)
+        print "[info]\tStatistics done!"
 
 else:
     raise Exception("You have to set a valid model.")
+print "[info]\tScript ending"
