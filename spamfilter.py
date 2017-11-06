@@ -147,10 +147,8 @@ def run_tests(emails, classifier, parser):
         print ("[stat]\t" + "Percentage of items classified as spam: "
                '{0:.2f}'.format(100.0 * sum(results) / len(results)) + "%")
 
-    result = {}
-    map(lambda x: classifier.evaluate(parser.parseEmail(x)), emails)
+    result = map(lambda x: classifier.evaluate(parser.parseEmail(x)), emails)
     gen_statistics(result)
-    return result
 
 
 parser = argparse.ArgumentParser(
@@ -211,7 +209,7 @@ elif args.mode == "test":
             mbox_split(args.mail, results, args.algo)
             print "[info]\tSplit MBOXs created"
     else:
-        results = run_tests(emails, classifier, parser)
+        run_tests(emails, classifier, parser)
         print "[info]\tStatistics done!"
 
 else:
