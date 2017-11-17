@@ -152,7 +152,14 @@ def run_tests(emails, classifier, parser):
 
 
 parser = argparse.ArgumentParser(
-    description='Create a spamfilter model or apply a created filter.')
+    description='Create a spamfilter model or apply a created filter.\n\
+    Create a model:\tpython spamfilter.py --ham ham.p --spam spam.p -o model.p\
+     model -a mi-logistic -l 5000 -d 500\n\
+    Test a model:\tpython spamfilter.py --mail mail.mbox -m model.p testing\
+     -o tagged.mbox -l 10000\n\
+    If the testing cmd takes MBOX as source then it separates the messages\
+     into two MBOXes. If the output is provided, then it creates tagged MBOX.\
+    ')
 parser.add_argument('--ham',
                     help="A file containing HAM.")
 parser.add_argument('--spam',
