@@ -6,7 +6,6 @@ from cvxpy import *
 
 class Classifier(object):
     __metaclass__ = ABCMeta
-
     @abstractmethod
     def evaluate(self, sample):
         None
@@ -17,6 +16,7 @@ class Classifier(object):
 
 
 class LogisticClassifier(Classifier):
+    """Classifier class based on logistic regression."""
     a = None
     b = None
 
@@ -47,12 +47,18 @@ class LogisticClassifier(Classifier):
 
 
 class SVMClassifier(Classifier):
+    """Classifier class based on support vector machines."""
     alpha = None
     tau = None
     x = None
 
     @staticmethod
     def gaussKernel(a, tau):
+        """Return Gaussian kernel matrix.
+
+        :param a: list of mails
+        :param tau: kernel coefficient number
+        """
         dim = len(a)
         Ker = numpy.zeros((dim, dim))
         for i in range(dim):
@@ -64,6 +70,14 @@ class SVMClassifier(Classifier):
 
     @staticmethod
     def getModelParams(x, y, tau, C, limit):
+        """ Finds and stores optimal model parameters.
+
+        :param x: list of input data
+        :param y: list of input labels
+        :param tau: kernel coefficient
+        :param C: penalty coefficient
+        :param limit: relevance limit for alphas
+        """
         m = len(y)
         x = 1 * (x > 0)
         y = 2 * y - 1

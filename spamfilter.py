@@ -100,7 +100,7 @@ def buildModel(ham, spam, dictLimit):
             [1] * len(spam) + [0] * len(ham)
         )
         print "[info]\tCreated Logistic-regression classifier"
-    print "[stat]\tTime taken: " + str(int(time.time())-start)
+    print "[stat]\tTime taken: " + str(int(time.time()) - start)
     return classifier, parser
 
 
@@ -109,14 +109,14 @@ def runTests(emails, classifier, parser):
         results = map(lambda x: int(x > 0), data.values())
         print "[stat]\tTotal items: " + str(len(results))
         print "[stat]\tTotal items classified as spam: " + str(sum(results))
-        print ("[stat]\t" + "Percentage of items classified as spam: "
-               '{0:.2f}'.format(100.0 * sum(results) / len(results)) + "%")
+        print("[stat]\t" + "Percentage of items classified as spam: "
+              '{0:.2f}'.format(100.0 * sum(results) / len(results)) + "%")
 
     def evalMsg(result, msg, classifier, parser):
         sha256 = hashlib.sha256()
         sha256.update(msg)
         result[sha256.hexdigest()] = \
-                classifier.evaluate(parser.parseEmail(msg))
+            classifier.evaluate(parser.parseEmail(msg))
 
     result = {}
     map(lambda x: evalMsg(result, x, classifier, parser), emails)
