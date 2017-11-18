@@ -38,6 +38,11 @@ class Parser(object):
         text = re.sub("<[^<>]*>", " ", text)  # remove HTML/XML tags
         text = re.sub(" +", " ", text)  # finisher whitespace removal
 
+        #TODO needs testing
+        text = text.replace("á", "a").replace("č", "c").replace("ď", "d").replace("é", "e").replace("ě", "e").replace("í", "i").replace("ň", "n").replace("ó", "o").replace("ř", "r").replace("š", "s").replace("ť", "t").replace("ú", "u").replace("ů", "u").replace("ý", "y").replace("ž", "z")
+        text = text.replace("Á", "a").replace("Č", "c").replace("Ď", "d").replace("Ě", "e").replace("É", "e").replace("Í", "i").replace("Ň", "n").replace("Ǒ", "o").replace("Ř", "r").replace("Š", "s").replace("Ť", "t").replace("Ú", "u").replace("Ů", "u").replace("Ý", "y").replace("Ž", "z")
+        #TODO end needs testing
+
         return text
 
     @abstractmethod
