@@ -1,3 +1,4 @@
+# coding=UTF-8
 import os
 import pickle
 import resource
@@ -144,8 +145,8 @@ def run_tests(emails, classifier, parser):
         results = map(lambda x: int(x > 0), data)
         print "[stat]\tTotal items: " + str(len(results))
         print "[stat]\tTotal items classified as spam: " + str(sum(results))
-        print ("[stat]\t" + "Percentage of items classified as spam: "
-               '{0:.2f}'.format(100.0 * sum(results) / len(results)) + "%")
+        print("[stat]\t" + "Percentage of items classified as spam: "
+              '{0:.2f}'.format(100.0 * sum(results) / len(results)) + "%")
 
     result = map(lambda x: classifier.evaluate(parser.parseEmail(x)), emails)
     gen_statistics(result)

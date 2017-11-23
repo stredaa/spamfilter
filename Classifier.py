@@ -1,3 +1,4 @@
+# coding=UTF-8
 import numpy
 import math
 from abc import ABCMeta, abstractmethod
