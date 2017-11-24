@@ -81,8 +81,12 @@ def mbox_tag(filename, detections, header_name, outmbox):
     for i in range(min(len(mails), len(detections))):
         mails[i].add_header("X-" + header_name, "score %.2f" % (detections[i]))
         if detections[i] >= 0:
-            mails[i].replace_header("Subject", "[SPAM]\t" +
-                                    mails[i].get("Subject"))
+            Subject = mails[i].get("Subject")
+            if Subject is not None:
+                mails[i].replace_header(
+                    "Subject", "[SPAM]\t" + mails[i].get("Subject"))
+            else:
+                mails[i].add_header("Subject", "[SPAM]")
         mbox.add(mails[i])
     mbox.flush()
     mbox.close()
@@ -156,7 +160,7 @@ parser = argparse.ArgumentParser(
     description='Create a spamfilter model or apply a created filter.\n\
     Create a model:\tpython spamfilter.py --ham ham.p --spam spam.p -o model.p\
      model -a mi-logistic -l 5000 -d 500\n\
-    Test a model:\tpython spamfilter.py --mail mail.mbox -m model.p testing\
+    Test a model:\tpython spamfilter.py --mail mail.mbox -m model.p test\
      -o tagged.mbox -l 10000\n\
     If the testing cmd takes MBOX as source then it separates the messages\
      into two MBOXes. If the output is provided, then it creates tagged MBOX.\
