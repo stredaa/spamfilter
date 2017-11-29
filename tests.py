@@ -36,11 +36,10 @@ class TestDictUtils(unittest.TestCase):
 class TestParser(unittest.TestCase):
 
     def test_parseEmail(self):
-        
+
         # Tests for ParserDictionary
         parser = ParserDictionary(['a', 'b', 'c'])
         self.assertEqual(parser.parseEmail('A c d a'), [2, 0, 1])
-
         parser = ParserDictionary(['a', 'b', 'c'])
         self.assertEqual(parser.parseEmail(' '), [0, 0, 0])
 

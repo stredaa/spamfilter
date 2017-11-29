@@ -1,3 +1,4 @@
+# coding=UTF-8
 import numpy
 import math
 from abc import ABCMeta, abstractmethod
@@ -82,16 +83,17 @@ class LogisticClassifier(Classifier):
 
 
 class SVMClassifier(Classifier):
+    """Classifier class based on support vector machines."""
     alpha = None
     tau = None
     x = None
 
     @staticmethod
     def gaussKernel(a, tau):
-        """gaussKernel
+        """Return Gaussian kernel matrix.
 
-        :param a:
-        :param tau:
+        :param a: list of mails
+        :param tau: kernel coefficient number
         """
         dim = len(a)
         Ker = numpy.zeros((dim, dim))
@@ -104,14 +106,12 @@ class SVMClassifier(Classifier):
 
     @staticmethod
     def getModelParams(x, y, tau, C, limit):
-        """Calculate SVM model parameters.
-
+        """ Finds and stores optimal model parameters.
         :param x: A list of vectorized samples.
-        :param y: A 1/0 vector symbolizing positive/negative
-        detection
-        :param tau:
-        :param C:
-        :param limit: Values of alpha[i] below limit are ignored.
+        :param y: A 1/0 vector symbolizing positive/negative detection
+        :param tau: kernel coefficient
+        :param C: penalty coefficient
+        :param limit: relevance limit for alpha
         """
         m = len(y)
         x = 1 * (x > 0)
