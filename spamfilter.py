@@ -81,12 +81,22 @@ def mbox_tag(filename, detections, header_name, outmbox):
     for i in range(min(len(mails), len(detections))):
         mails[i].add_header("X-" + header_name, "score %.2f" % (detections[i]))
         if detections[i] >= 0:
+            try:
+                mails[i].replace_header(
+                    "Subject", "[SPAM]\t" + mails[i].get("Subject"))
+            except Exception as e:
+                print "[WARN]\t" + str(e)
+                mails[i].add_header("Subject", "[SPAM]")
+
+            '''Commented due to FUGLY hack as faculty mbox export had problems
+            with subject doubling.
             Subject = mails[i].get("Subject")
             if Subject is not None:
                 mails[i].replace_header(
                     "Subject", "[SPAM]\t" + mails[i].get("Subject"))
             else:
                 mails[i].add_header("Subject", "[SPAM]")
+            '''
         mbox.add(mails[i])
     mbox.flush()
     mbox.close()
