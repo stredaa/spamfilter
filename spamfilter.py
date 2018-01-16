@@ -15,6 +15,22 @@ def setRamLimit(limit):
     resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
 
 
+def fix_mbox(filename):
+    with open(filename, "rb") as f:
+        content = f.read()
+    filename = filename[filename.rindex("/") + 1:]
+    with open("._" + filename, "wb") as f:
+        f.write(content.replace(">From", ">From_fixed_nfkusadhgf:"))
+    return filename
+
+
+def revert_mbox(filename):
+    with open(filename, "rb") as f:
+        content = f.read()
+    with open(filename, "wb") as f:
+        f.write(content.replace(">From_fixed_nfkusadhgf:", ">From"))
+
+
 def mbox_extract(filename):
     def getBody(msg):
         body = ""
@@ -48,12 +64,14 @@ def mbox_extract(filename):
             except:
                 pass
         return body
-    mbox = mailbox.mbox(filename)
+    filename = fix_mbox(filename)
+    mbox = mailbox.mbox("._" + filename)
     return list(map(getBody, mbox))
 
 
 def mbox_split(filename, detections, header_name):
-    mbox = mailbox.mbox(filename)
+    filename = fix_mbox(filename)
+    mbox = mailbox.mbox("._" + filename)
     mails = [i for i in mbox]
     mbox.close()
 
@@ -69,10 +87,13 @@ def mbox_split(filename, detections, header_name):
     ham.flush()
     spam.close()
     ham.close()
+    revert_mbox("spam.mbox")
+    revert_mbox("ham.mbox")
 
 
 def mbox_tag(filename, detections, header_name, outmbox):
-    mbox = mailbox.mbox(filename)
+    filename = fix_mbox(filename)
+    mbox = mailbox.mbox("._" + filename)
     mails = [i for i in mbox]
     mbox.close()
 
@@ -81,25 +102,16 @@ def mbox_tag(filename, detections, header_name, outmbox):
     for i in range(min(len(mails), len(detections))):
         mails[i].add_header("X-" + header_name, "score %.2f" % (detections[i]))
         if detections[i] >= 0:
-            try:
-                mails[i].replace_header(
-                    "Subject", "[SPAM]\t" + mails[i].get("Subject"))
-            except Exception as e:
-                print "[WARN]\t" + str(e)
-                mails[i].add_header("Subject", "[SPAM]")
-
-            '''Commented due to FUGLY hack as faculty mbox export had problems
-            with subject doubling.
             Subject = mails[i].get("Subject")
             if Subject is not None:
                 mails[i].replace_header(
                     "Subject", "[SPAM]\t" + mails[i].get("Subject"))
             else:
                 mails[i].add_header("Subject", "[SPAM]")
-            '''
         mbox.add(mails[i])
     mbox.flush()
     mbox.close()
+    revert_mbox(outmbox)
 
 
 def retrieve_file(filename, limit):
