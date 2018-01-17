@@ -100,6 +100,7 @@ def mbox_tag(filename, detections, header_name, outmbox):
     mbox = mailbox.mbox(outmbox)
 
     for i in range(min(len(mails), len(detections))):
+        assert mails[i].keys()
         mails[i].add_header("X-" + header_name, "score %.2f" % (detections[i]))
         if detections[i] >= 0:
             Subject = mails[i].get("Subject")
@@ -238,6 +239,7 @@ elif args.mode == "test":
                       emails)
         if not args.output == "model.p":
             mbox_tag(args.mail, results, args.algo, args.output)
+            run_tests(emails, classifier, parser)
             print "[info]\tTagged MBOX created"
         else:
             mbox_split(args.mail, results, args.algo)
