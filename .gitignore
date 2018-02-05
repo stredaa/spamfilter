@@ -2,3 +2,5 @@
 *.p
 .vscode/
 .ipynb_checkpoints/
+
+pickled
