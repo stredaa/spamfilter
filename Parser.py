@@ -27,8 +27,8 @@ class Parser(object):
                 text += msg.get_payload() + " "
             except:
                 text += mail
-        if "delivered-to" in text:
-            text = text[re.search("\n\n", text).start() + 1:]
+#        if "delivered-to" in text:
+#            text = text[re.search("\n\n", text).start() + 1:]
 
         # REGEX punctuation mark removal
         text = Parser.multiRegexSubstitute(
