@@ -33,8 +33,6 @@ class Classifier(object):
 
 class LogisticClassifier(Classifier):
     """A classifier based on a logistic curve."""
-    __a = None
-    __b = None
 
     @staticmethod
     def getModelParams(data, labels, size):
@@ -84,9 +82,6 @@ class LogisticClassifier(Classifier):
 
 class SVMClassifier(Classifier):
     """Classifier class based on support vector machines."""
-    alpha = None
-    tau = None
-    x = None
 
     @staticmethod
     def gaussKernel(a, tau):
