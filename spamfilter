@@ -1,0 +1,91 @@
+#!/bin/bash
+
+login=tuma
+DATADIR=/tmp
+OPTS="--ham $DATADIR/$login-ham.mbox --spam $DATADIR/$login-spam.mbox"
+cd /etc/admin/ham_spam_pgm
+rm spamfilter_test.log
+rm spamfilter_train.log
+
+
+function train_test_loop {
+    #trenovani - tu odkomentovat, pokud jiz neexistuji modely
+    #python spamfilter.py $OPTS -o $1-$3-$login.p -a mi-$1 -l $2\
+    #    -d $3 model >> spamfilter_train.log
+    #testovani
+    for f in spam ham; do
+        #hlavicka v logu
+        echo $1-$dict >> spamfilter_test.log
+        python spamfilter.py --mail $DATADIR/$login-$f.mbox -m $1-$3-$login.p\
+        -l 100000 -o /tmp/tagged-$login-$f-$1-$3.mbox\
+        test >> spamfilter_test.log
+        python spamfilter.py --mail $DATADIR/$login-$f.mbox -m $1-$3-$login.p\
+        -l $2 -o /tmp/tagged-$login-$f-$1-$2-$3.mbox\
+        test >> spamfilter_test.log
+    done
+}
+
+function train_test_loop2 {
+    #trenovani
+    python spamfilter.py $OPTS -o $1-$2-$3-$login.p -a mi-$1 -l $2\
+        -d $3 model >> spamfilter_train.log
+    #testovani
+    for f in spam ham; do
+        #hlavicka v logu
+        echo $1-$2-$dict >> spamfilter_test.log
+        python spamfilter.py --mail $DATADIR/$login-$f.mbox -m $1-$2-$3-$login.p\
+        -l 100000 -o /tmp/tagged-$login-$f-$1-$2-$3.mbox\
+        test >> spamfilter_test.log
+        python spamfilter.py --mail $DATADIR/$login-$f.mbox -m $1-$2-$3-$login.p\
+        -l $2 -o /tmp/tagged-$login-$f-$1-$2-$3.mbox\
+        test >> spamfilter_test.log
+    done
+}
+
+#svm - skalovano kvuli spotrebe pameti
+for dict in 50 60 70 80 90 100 200 300 400 500; do
+    train_test_loop svm 400 $dict #model, tranovaci set, slovnik
+done
+
+for dict in 1000 2000 3000 4000 5000; do
+    train_test_loop svm 350 $dict #model, tranovaci set, slovnik
+done
+
+train_test_loop svm 310 7500 #model, tranovaci set, slovnik
+train_test_loop svm 200 10000 #model, tranovaci set, slovnik
+
+#logisticka regrese
+for dict in 150 160 170 180 190 200 210 220 230 240 250; do
+    train_test_loop logistic 1750 $dict #model, trenovaci set, slovnik
+done
+
+for dict in 150 160 170 180 190 200 210 220 230 240 250; do
+    train_test_loop2 logistic 1000 $dict #model, trenovaci set, slovnik
+done
+
+##Logisticka regrese
+#for dict in 150 160 170 180 190 200 210 220 230 240 250; do
+#    #trenovani
+#    python spamfilter.py $OPTS -o log-$dict-$login.p -a mi-log -l 1750\
+#        -d $dict model >> spamfilter_train.log
+#    #testovani
+#    for f in spam ham; do
+#        #hlavicka v logu
+#        echo log-$dict >> spamfilter_test.log
+#        python spamfilter.py --mail -m log-$dict-$login.p -l -1\
+#            -o /tmp/tagged-$login-$f-log-$dict.mbox test >> spamfilter_test.log
+#    done
+#done
+#
+##Support-vector mail
+#for dict in 50 60 70 80 90 100 200 300 400 500 1000 2000 3000 4000 5000:
+#    #trenovani
+#    python spamfilter.py $OPTS -o svm-$dict-$login.p -a mi-svm -l 370\
+#        -d $dict model >> spamfilter_train.log
+#    #testovani
+#    for f in spam ham; do
+#        #hlavicka v logu
+#        echo log-$dict >> spamfilter_test.log
+#        python spamfilter.py --mail -m svm-$dict-$login.p -l -1\
+#            -o /tmp/tagged-$login-$f-svm-$dict.mbox test >> spamfilter_test.log
+#    done

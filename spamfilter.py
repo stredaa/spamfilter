@@ -19,7 +19,7 @@ def fix_mbox(filename):
     with open(filename, "rb") as f:
         content = f.read()
     filename = filename[filename.rindex("/") + 1:]
-    with open("._" + filename, "wb") as f:
+    with open("/tmp/._" + filename, "wb") as f:
         f.write(content.replace(">From", ">From_fixed_nfkusadhgf:"))
     return filename
 
@@ -65,8 +65,10 @@ def mbox_extract(filename):
                 pass
         return body
     filename = fix_mbox(filename)
-    mbox = mailbox.mbox("._" + filename)
-    return list(map(getBody, mbox))
+    mbox = mailbox.mbox("/tmp/._" + filename)
+    result = list(map(getBody, mbox))
+    os.remove("/tmp/._" + filename)
+    return result
 
 
 def mbox_split(filename, detections, header_name):
@@ -89,7 +91,7 @@ def mbox_split(filename, detections, header_name):
     ham.close()
     revert_mbox("spam.mbox")
     revert_mbox("ham.mbox")
-
+    os.remove("._" + filename)
 
 def mbox_tag(filename, detections, header_name, outmbox):
     filename = fix_mbox(filename)
@@ -179,75 +181,79 @@ def run_tests(emails, classifier, parser):
     gen_statistics(result)
 
 
-parser = argparse.ArgumentParser(
-    description='Create a spamfilter model or apply a created filter.\n\
-    Create a model:\tpython spamfilter.py --ham ham.p --spam spam.p -o model.p\
-     model -a mi-logistic -l 5000 -d 500\n\
-    Test a model:\tpython spamfilter.py --mail mail.mbox -m model.p test\
-     -o tagged.mbox -l 10000\n\
-    If the testing cmd takes MBOX as source then it separates the messages\
-     into two MBOXes. If the output is provided, then it creates tagged MBOX.\
-    ')
-parser.add_argument('--ham',
-                    help="A file containing HAM.")
-parser.add_argument('--spam',
-                    help="A file containing SPAM")
-parser.add_argument('--mail',
-                    help="A file containing unsorted mail")
-parser.add_argument('-o', '--output', help="output file", default="model.p")
-parser.add_argument('-m', '--model', help="model file", default="model.p")
-parser.add_argument("mode", help="Set program mode",
-                    choices=["model", "test"])
-parser.add_argument('-a', "--algo", help="Select training algorithms.",
-                    choices=["mi-logistic",
-                             "mi-svm"], default="mi-logistic")
-parser.add_argument("-l", "--limit", default=500,
-                    help="Import set limit - memory limitation", type=int)
-parser.add_argument("-d", "--dictLimit", default=250,
-                    help="Max dictionary size", type=int)
-parser.add_argument("-r", "--ramLimit", type=int,
-                    help="Set RAM limit (MB) -- OOM prevent.")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description=('Create a spamfilter model or apply a created filter.\r\n'
+                     + 'Create a model:\tpython spamfilter.py --ham ham.p '
+                     + '--spam spam.p -o model.p model -a mi-logistic -l 5000'
+                     + ' -d 500\r\n'
+                     + 'Test a model:\tpython spamfilter.py --mail mail.mbox'
+                     + ' -m model.p test -o tagged.mbox -l 10000\r\n'
+                     + 'If the testing cmd takes MBOX as source then it '
+                     + 'separates the messages into two MBOXes. If the output'
+                     + ' is provided, then it creates tagged MBOX.'))
+    parser.add_argument('--ham',
+                        help="A file containing HAM.")
+    parser.add_argument('--spam',
+                        help="A file containing SPAM")
+    parser.add_argument('--mail',
+                        help="A file containing unsorted mail")
+    parser.add_argument('-o', '--output', help="output file",
+                        default="model.p")
+    parser.add_argument('-m', '--model', help="model file",
+                        default="model.p")
+    parser.add_argument("mode", help="Set program mode",
+                        choices=["model", "test"])
+    parser.add_argument('-a', "--algo", help="Select training algorithms.",
+                        choices=["mi-logistic",
+                                 "mi-svm"], default="mi-logistic")
+    parser.add_argument("-l", "--limit", default=500,
+                        help="Import set limit - memory limitation", type=int)
+    parser.add_argument("-d", "--dictLimit", default=250,
+                        help="Max dictionary size", type=int)
+    parser.add_argument("-r", "--ramLimit", type=int,
+                        help="Set RAM limit (MB) -- OOM prevent.")
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-if args.ramLimit:
-    setRamLimit(args.ramLimit * 10**6)
+    if args.ramLimit:
+        setRamLimit(args.ramLimit * 10**6)
 
-if args.mode == "model":
-    if not args.ham or not args.spam:
-        print "--ham and --spam parameters are required"
-    ham = retrieve_file(args.ham, args.limit)
-    spam = retrieve_file(args.spam, args.limit)
+    if args.mode == "model":
+        if not args.ham or not args.spam:
+            print "--ham and --spam parameters are required"
+        ham = retrieve_file(args.ham, args.limit)
+        spam = retrieve_file(args.spam, args.limit)
 
-    classifier, parser = build_model(ham, spam, args.dictLimit)
-    pickle.dump({"classifier": classifier, "parser": parser},
-                open(args.output, "wb"))
+        classifier, parser = build_model(ham, spam, args.dictLimit)
+        pickle.dump({"classifier": classifier, "parser": parser},
+                    open(args.output, "wb"))
 
-elif args.mode == "test":
-    def unpickleModel(filename):
-        data = pickle.load(open(filename, "rb"))
-        return data["classifier"], data["parser"]
+    elif args.mode == "test":
+        def unpickleModel(filename):
+            data = pickle.load(open(filename, "rb"))
+            return data["classifier"], data["parser"]
 
-    if not args.mail:
-        print "--mail parameter is required"
-#
-    emails = retrieve_file(args.mail, args.limit)
-    classifier, parser = unpickleModel(args.model)
+        if not args.mail:
+            print "--mail parameter is required"
+    #
+        emails = retrieve_file(args.mail, args.limit)
+        classifier, parser = unpickleModel(args.model)
 
-    if ".mbox" in args.mail:
-        results = map(lambda x: classifier.evaluate(parser.parseEmail(x)),
-                      emails)
-        if not args.output == "model.p":
-            mbox_tag(args.mail, results, args.algo, args.output)
-            run_tests(emails, classifier, parser)
-            print "[info]\tTagged MBOX created"
+        if ".mbox" in args.mail:
+            results = map(lambda x: classifier.evaluate(parser.parseEmail(x)),
+                          emails)
+            if not args.output == "model.p":
+                mbox_tag(args.mail, results, args.algo, args.output)
+                run_tests(emails, classifier, parser)
+                print "[info]\tTagged MBOX created"
+            else:
+                mbox_split(args.mail, results, args.algo)
+                print "[info]\tSplit MBOXs created"
         else:
-            mbox_split(args.mail, results, args.algo)
-            print "[info]\tSplit MBOXs created"
-    else:
-        run_tests(emails, classifier, parser)
-        print "[info]\tStatistics done!"
+            run_tests(emails, classifier, parser)
+            print "[info]\tStatistics done!"
 
-else:
-    raise Exception("You have to set a valid model.")
-print "[info]\tScript ending"
+    else:
+        raise Exception("You have to set a valid model.")
+    print "[info]\tScript ending"
